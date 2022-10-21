@@ -3,13 +3,14 @@ import './App.css'
 import Speak from './components/Speak'
 import { ReactReader } from "react-reader"
 import FileUpload from './components/FileUpload'
+import BeyondOrder from './Beyond.epub'
 
 const App = () => {
   // And your own state logic to persist state
   const [location, setLocation] = useState(null)
   const [textContent, setTextContent] = useState('')
   const [ words, setWords] = useState('')
-  const [ book, setBook] = useState('');
+  const [ book, setBook] = useState(BeyondOrder);
 
   const locationChanged = (epubcifi) => {
     // epubcifi is a internal string used by epubjs to point to a location in an epub. It looks like this: epubcfi(/6/6[titlepage]!/4/2/12[pgepubid00003]/3:0)
@@ -33,7 +34,7 @@ const App = () => {
       // console.log('contentsArr', contentsArr)
     }
   }
-  console.log('book', book)
+  console.log('BeyondOrder',BeyondOrder)
   console.log('bookType', typeof book)
 
   const convertBook = () => {
@@ -81,8 +82,8 @@ const App = () => {
         />
       </div>
       <Speak words={words} />
-      <FileUpload book={book} setBook={setBook} />
-      <button onClick={convertBook}>Boom</button>
+      {/* <FileUpload book={book} setBook={setBook} />
+      <button onClick={convertBook}>Boom</button> */}
     </div>
   )
 }
