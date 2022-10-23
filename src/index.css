@@ -24,3 +24,7 @@
 .playControl {
   @apply bg-white shadow-md;
 }
+
+.read-this-thing {
+  @apply bg-red-200
+}

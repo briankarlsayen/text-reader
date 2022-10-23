@@ -1,10 +1,9 @@
-import e from 'cors';
 import React, {useState, useEffect} from 'react'
 import PlayIcon from '../assets/play.svg'
 import PauseIcon from '../assets/pause.svg'
 import StopIcon from '../assets/stop.svg'
 
-const Speak = ({words}) => {
+const Speak = ({words, bookLoc, setBookLoc}) => {
   const [inputText, setInputText] = useState('');
   const [speechRate, setSpeechRate] = useState(1);
   const [speechPitch, setSpeechPitch] = useState(1);
@@ -14,9 +13,6 @@ const Speak = ({words}) => {
   // const [ resume, setResume] = useState(false)
   const synth = window.speechSynthesis;
 
-  const inputForm = document.querySelector('form');
-  const inputTxt = document.querySelector('.txt');
-
   useEffect(() => {
     const fetchVoices = async() => {
       const voiceSynth = window.speechSynthesis;
@@ -25,11 +21,25 @@ const Speak = ({words}) => {
     fetchVoices()
   }, [])
   
+  // * utter handler
   const utterThis = new SpeechSynthesisUtterance(words);
   utterThis.voice = voices[selectVoice]
   utterThis.pitch = speechPitch;
   utterThis.rate = speechRate;
-
+  utterThis.onpause = (event) => {
+    const char = event.utterance.text.charAt(event.charIndex);
+    console.log(`Speech paused at character ${event.charIndex} of "${event.utterance.text}", which is "${char}".`);
+  }
+  utterThis.onboundary = (event) => {
+    const char = event.utterance.text.charAt(event.charIndex);
+    console.log('event.charIndex', char)
+    setBookLoc(event.charIndex)
+  }
+  utterThis.onend = () => {
+    setPlay(false)
+  }
+  // * end utter
+ 
   const handlePlay = (e) => {
     if(!synth.speaking) {
       synth.speak(utterThis);
@@ -39,7 +49,9 @@ const Speak = ({words}) => {
     setPlay(true)
   }
 
+
   const handlePause = (e) => {
+    console.log('tae')
     if(synth.speaking) {
       synth.pause(utterThis);
     }
@@ -50,6 +62,21 @@ const Speak = ({words}) => {
     console.log('synth', synth.speaking)
     synth.cancel(utterThis)
   }
+  
+  // useEffect(() => {
+  //   if((synth && synth.pending)) {
+  //     console.log('fire')
+  //   }
+  // }, [bookLoc])
+  // console.log('synth.pending', synth.speaking)
+  // utterThis.addEventListener('pause', (event) => {
+  //   console.log(`char index ${event.charIndex}`)
+  //   // console.log(`Utterance has finished being spoken after ${event.elapsedTime} seconds.`);
+  // });
+  // console.log('utterThis', utterThis.text);
+
+  
+  
   return (
     <form className='fixed z-10 right-10 bottom-4' onSubmit={e=>e.preventDefault()}>
       {/* <label htmlFor="txt">Enter text</label> */}

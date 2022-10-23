@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import Speak from './components/Speak'
-import { ReactReader } from "react-reader"
-import FileUpload from './components/FileUpload'
+import { ReactReader, ReactReaderStyle } from "react-reader"
 import BeyondOrder from './Beyond.epub'
 
 const App = () => {
@@ -11,6 +10,7 @@ const App = () => {
   const [textContent, setTextContent] = useState('')
   const [ words, setWords] = useState('')
   const [ book, setBook] = useState(BeyondOrder);
+  const [bookLoc, setBookLoc] = useState(0)
 
   const locationChanged = (epubcifi) => {
     // epubcifi is a internal string used by epubjs to point to a location in an epub. It looks like this: epubcfi(/6/6[titlepage]!/4/2/12[pgepubid00003]/3:0)
@@ -23,8 +23,15 @@ const App = () => {
     // console.log('iFrameContent', contentParagraph)
     // console.log('contents', contentParagraph.length)
     if(contentParagraph.length > 0) {
+      // contentParagraph[1].classList.add('read-this-thing')
       let contentsArr = ``
       for(let i = 0; i < contentParagraph.length ; i++) {
+        
+        // if(bookLoc > 0) {
+        //   console.log('class', contentParagraph[i].classList)
+        //   console.log('succ')
+        // }
+        
         contentsArr += `${contentParagraph[i].textContent}`
         if(i > 0) {
           contentsArr += `${contentParagraph[i].textContent}/n`
@@ -34,43 +41,63 @@ const App = () => {
       // console.log('contentsArr', contentsArr)
     }
   }
-  console.log('BeyondOrder',BeyondOrder)
-  console.log('bookType', typeof book)
 
-  const convertBook = () => {
-    const savedBook = localStorage.getItem('bookFile')
-    console.log('savedBook', savedBook)
-    
-    const cleanedBook = JSON.parse(savedBook)
-    cleanedBook.lastModifiedDate = new Date(cleanedBook.lastModifiedDate)
-    setBook(cleanedBook)
-  }
-  // convertBook()
-  // useEffect(() => {
-  //   const savedBook = localStorage.getItem('bookFile')
-  //   console.log('savedBook', savedBook)
-  //   const cleanedBook = JSON.parse(savedBook)
-  //   // cleanedBook.lastModifiedDate = new Date(cleanedBook.lastModifiedDate)
-  //   console.log('savedBook size', cleanedBook)
-  //   // const reader = new FileReader()
-  //   // reader.onload  = () => {
-  //   //   console.log('file loaded')
-  //   //   // const fileBook = new File(cleanedBook.size ,cleanedBook)
-  //   //   // console.log('fileBook', fileBook)
-  //   // }
+  const [selections, setSelections] = useState([])
+  const renditionRef = useRef(null)
+  
+  useEffect(() => {
+    if (renditionRef.current) {
+      function setRenderSelection(cfiRange, contents) {
+        console.log('cfiRange', cfiRange)
+        console.log('contents', contents)
+        console.log('renditionRef', contents.documentElement.textContent)
+        setSelections(selections.concat({
+          text: renditionRef.current.getRange(cfiRange).toString(),
+          cfiRange
+        }))
+        renditionRef.current.annotations.add("highlight", cfiRange, {}, null , "hl", {"fill": "blue", "fill-opacity": "0.5", "mix-blend-mode": "multiply"})
+        contents.window.getSelection().removeAllRanges()
+      }
+      renditionRef.current.on("selected", setRenderSelection)
+      return () => {
+        renditionRef.current.off("selected", setRenderSelection)
+      }
+    }
+  }, [setSelections, selections])
 
-  //   // fileReader.error = function() {
-  //   //   console.log('file error')
-  //   //   // const fileBook = new File(cleanedBook.size ,cleanedBook)
-  //   //   // console.log('fileBook', fileBook)
-  //   // }
+  // console.log('renderrr', renditionRef.current)
 
-  //   // const fileBook = fileReader.readAsText( cleanedBook );
-  //   // const fileBook = new FileReader(cleanedBook)
-  //   // console.log('fileBook', fileBook)
-
-  // }, [])
-
+  // TODO change book contents to useRef
+  useEffect(() => {
+      const epubView = document.getElementsByClassName('epub-view')
+      console.log('epubView', epubView)
+      if(epubView.length > 0) {
+        const iFrameContent = epubView[0].querySelector('iframe').contentDocument
+        const contentParagraph = iFrameContent.querySelectorAll('p')
+        
+        // console.log('epubView', epubView[0])
+        // console.log('iFrameContent', contentParagraph)
+        // console.log('contents', contentParagraph.length)
+        if(contentParagraph.length > 0) {
+          // contentParagraph[0].classList.add('read-this-thing')
+          // console.log('contentParagraph', contentParagraph[0].classList)
+          contentParagraph[0].style.backgroundColor = 'yellow';
+          let contentsArr = ``
+          for(let i = 0; i < contentParagraph.length ; i++) {
+            
+            // if(bookLoc > 0) {
+            //   console.log('class', contentParagraph[i].classList)
+            //   console.log('succ')
+            // }
+            
+            contentsArr += `${contentParagraph[i].textContent}`
+            if(i > 0) {
+              contentsArr += `${contentParagraph[i].textContent}/n`
+            }
+          }
+        }
+      }
+  },[bookLoc])
   return (
     <div>
       <div style={{ height: "100vh"}}>
@@ -79,11 +106,21 @@ const App = () => {
           locationChanged={locationChanged}
           url={book}  
           // url={book || "https://react-reader.metabits.no/files/alice.epub"}
+          getRendition={(rendition) => {
+            renditionRef.current = rendition
+            renditionRef.current.themes.default({
+              '::selection': {
+                'background': 'orange'
+              }
+            })
+            setSelections([])
+          }}
         />
       </div>
-      <Speak words={words} />
+      <Speak words={words} setBookLoc={setBookLoc} bookLoc={bookLoc} />
       {/* <FileUpload book={book} setBook={setBook} />
       <button onClick={convertBook}>Boom</button> */}
+      <h1 className='read-this-thing'>dummy</h1>
     </div>
   )
 }
